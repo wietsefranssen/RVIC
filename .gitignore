@@ -52,5 +52,5 @@ samples/cases/*
 ehthumbs.db
 Thumbs.db
 
-MakeRVICParams/output/
-MakeRVICParams/temp/
+output
+temp
