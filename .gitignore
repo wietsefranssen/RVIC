@@ -51,3 +51,6 @@ samples/cases/*
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+wur/setup_wietse/MakeRVICParams/output/
+wur/setup_wietse/MakeRVICParams/temp/
