@@ -96,7 +96,7 @@ ncks -A $outputPath"domain_"$domainName".nc" $outputPath$outputFile
 
 #############################
 ## Create Pour Points File
-python2.7 $rvicPath"/tools/find_pour_points.py" $outputPath$outputFile $outputPath"pour_points_"$domainName".csv"
+python2.7 $rvicPath"/tools/find_pour_points.py" $outputPath$outputFile $outputPath"pour_points_"$domainName".csv" --which_points all 
 #############################
 ## Create UH BOX File
 # todo

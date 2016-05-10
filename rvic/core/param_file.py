@@ -56,18 +56,18 @@ def finish_params(outlets, dom_data, config_dict, directories):
 
         slc = slice(min(len(before), 1000))
 
-        #log.debug('plotting unit hydrograph timeseries now for before'
-        #          ' / after subseting')
+        log.debug('plotting unit hydrograph timeseries now for before'
+                  ' / after subseting')
 
-        #title = 'UHS before subset'
-        #pfname = plots.uhs(before[slc], title, options['CASEID'],
-        #                   directories['plots'])
-        #log.info('%s Plot:  %s', title, pfname)
+        title = 'UHS before subset'
+        pfname = plots.uhs(before[slc], title, options['CASEID'],
+                           directories['plots'])
+        log.info('%s Plot:  %s', title, pfname)
 
-        #title = 'UHS after subset'
-        #pfname = plots.uhs(after[slc], title, options['CASEID'],
-        #                   directories['plots'])
-        #log.info('%s Plot:  %s', title, pfname)
+        title = 'UHS after subset'
+        pfname = plots.uhs(after[slc], title, options['CASEID'],
+                           directories['plots'])
+        log.info('%s Plot:  %s', title, pfname)
     else:
         log.info('Not subsetting because either SUBSET_DAYS is null or '
                  'SUBSET_DAYS<BASIN_FLOWDAYS')

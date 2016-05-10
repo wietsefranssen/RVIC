@@ -21,7 +21,7 @@ temp_area=temp_area.nc
 temp_mask1=temp_mask1.nc
 temp_mask=temp_mask.nc
 
-outfile="domain.rvic."$grid_name"."`eval date +%Y%m%d`".nc"
+outfile="domain.rvic_"$grid_name".nc"
 script=$0
 PLANET_RADIUS=6371000
 # -------------------------------------------------------------------- #
@@ -30,8 +30,8 @@ PLANET_RADIUS=6371000
 # Make fraction variable
 echo 'making fraction variable'
 gdal_translate -of netCDF $fraction_file $temp_frac1
-ncap2 -s 'Band1=double(Band1)' $temp_frac1 $temp_frac
-ncrename -v Band1,frac $temp_frac
+ncap2 -s 'mask=double(mask)' $temp_frac1 $temp_frac
+ncrename -v mask,frac $temp_frac
 ncatted -O -a long_name,frac,o,c,"fraction of grid cell that is active" $temp_frac
 ncatted -O -a note,frac,a,c,"unitless" $temp_frac
 
@@ -52,14 +52,13 @@ echo 'done making area variable'
 # -------------------------------------------------------------------- #
 # Make land mask file (1 = land, 0 = not land)
 echo 'making mask variable'
-ncap2 -O -v -s 'm=frac' $temp_frac $temp_mask1
-ncap2 -O -v -s 'where(m>0.0000001) m=1; elsewhere m=0;' $temp_mask1 $temp_mask
-ncatted -O -a long_name,m,a,c,"domain mask" $temp_mask
-ncatted -O -a note,m,a,c,"unitless" $temp_mask
-ncatted -O -a comment,m,a,c,"0 value indicates cell is not active" $temp_mask
+ncap2 -O -v -s 'mask=frac' temp_frac.nc $temp_mask1
+ncap2 -O -v -s 'where(mask>0.0000001) mask=1; elsewhere mask=0;' $temp_mask1 $temp_mask
+ncatted -O -a long_name,mask,a,c,"domain mask" $temp_mask
+ncatted -O -a note,mask,a,c,"unitless" $temp_mask
+ncatted -O -a comment,mask,a,c,"0 value indicates cell is not active" $temp_mask
 
-ncks -A -v m $temp_mask $outfile
-ncrename -O -v m,mask $outfile $outfile
+ncks -A -v mask $temp_mask $outfile
 echo 'done making mask variable'
 # -------------------------------------------------------------------- #
 

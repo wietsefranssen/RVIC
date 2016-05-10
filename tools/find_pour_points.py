@@ -65,7 +65,7 @@ def main():
 def find_all(basin_id, source_area, land_mask, lons, lats, res):
     """Return the info for all land points """
 
-    lat, lon = np.meshgrid(lats, lons)
+    lon, lat = np.meshgrid(lons, lats)
 
     # ---------------------------------------------------------------- #
     # Find x/y inds of all land points
@@ -90,8 +90,8 @@ def find_all(basin_id, source_area, land_mask, lons, lats, res):
         inds = np.nonzero(basin_id == bi)
         x_basin = lon[inds]
         y_basin = lat[inds]
-        x_outlet[i] = lon[y, x]
-        y_outlet[i] = lat[y, x]
+        x_outlet[i] = lon[y[i], x[i]]
+        y_outlet[i] = lat[y[i], x[i]]
         min_x[i] = min(x_basin)
         max_x[i] = max(x_basin) + res
         min_y[i] = min(y_basin)
@@ -253,11 +253,11 @@ def write_ascii_file(basin, x_outlet, y_outlet, max_area, min_x, min_y,
     """
     # ---------------------------------------------------------------- #
     # set format
-    fmt = ['%i', '%.10f', '%.10f', '%i', '%.10f', '%.10f', '%.10f', '%.10f']
-    out = np.column_stack((basin, x_outlet, y_outlet, max_area, min_x, min_y,
+    fmt = ['%.2f', '%.2f', '%i', '%.2f', '%.2f', '%.2f', '%.2f']
+    out = np.column_stack((x_outlet, y_outlet, max_area, min_x, min_y,
                           max_x, max_y))
-    header = 'OID, longitude, latitude, basin_area, min_lon, min_lat, ' \
-             'max_lon, max_lat\n'
+    header = 'lons,lats,basin_area,min_lon,min_lat,' \
+             'max_lon,max_lat\n'
     with file(out_file, 'w') as outfile:
         outfile.write(header)
         np.savetxt(outfile, out, fmt=fmt, delimiter=',')
