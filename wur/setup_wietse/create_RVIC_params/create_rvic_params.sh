@@ -11,12 +11,13 @@ flowDirectionInput="ddm30"
 
 domain="-179.75,179.75,-55.75,83.75"; domainName="global"
 domain="-24.25,39.75,33.25,71.75"; domainName="EU"
-domain="0.25,10.25,50.25,55.55"; domainName="NL"
+#domain="0.25,10.25,50.25,55.55"; domainName="NL"
 #domain="-85.25,-30.25,-60.25,15.25"; domainName="S-America"
 ####### ONLY ADAPT THOSE LINES
 
 
 rvicPath="$(pwd)/../../../"
+tonicParamsPath="../create_VIC_params/"
 inputPath="./input/"
 tempPath="./temp/"
 
@@ -27,7 +28,7 @@ mkdir -p $inputPath
 mkdir -p $outputPath
 mkdir -p $tempPath
 
-outputFile="input_"$domainName".nc"
+outputFile="RVIC_input_"$domainName".nc"
 
 if [ "$flowDirectionInput" == "download" ]
 then
@@ -85,7 +86,7 @@ gdal_translate -of AAIGrid $tempPath"mask_"$domainName".nc" $tempPath"fraction_"
 # establish the domain file (domain.rvic.europe.20160208.nc)
 $rvicPath"/tools/fraction2domain.bash" $tempPath"fraction_"$domainName".asc" $domainName
 mv "domain.rvic_"$domainName".nc" $outputPath"domain_"$domainName".nc"
-ncrename -v mask,Land_Mask $outputPath"domain_"$domainName".nc"
+#ncrename -v mask,Land_Mask $outputPath"domain_"$domainName".nc"
 
 ## 5. Combine all into netcdf format file
 #ncks -A $tempPath"mask_"$domainName".nc" $outputPath$outputFile
@@ -96,7 +97,7 @@ ncks -A $outputPath"domain_"$domainName".nc" $outputPath$outputFile
 
 #############################
 ## Create Pour Points File
-python2.7 $rvicPath"/tools/find_pour_points.py" $outputPath$outputFile $outputPath"pour_points_"$domainName".csv" --which_points all 
+python2.7 $rvicPath"/tools/find_pour_points.py" $outputPath$outputFile $outputPath"RVIC_pour_points_"$domainName".csv" --which_points all 
 #############################
 ## Create UH BOX File
 # todo
@@ -105,8 +106,8 @@ python2.7 $rvicPath"/tools/find_pour_points.py" $outputPath$outputFile $outputPa
 ## Create RVIC parameters
 #source activate rvic
 cp $inputPath"/rvic_parameters.conf" $tempPath"/rvic_parameters.conf"
-sed -i "s|FILE_NAME = ./pour_points.csv|FILE_NAME = ./output/pour_points_$domainName.csv|" $tempPath"/rvic_parameters.conf"  
-sed -i "s|FILE_NAME = ./input.nc|FILE_NAME = ./output/input_$domainName.nc|" $tempPath"/rvic_parameters.conf"  
+sed -i "s|FILE_NAME = ./pour_points.csv|FILE_NAME = ./output/RVIC_pour_points_$domainName.csv|" $tempPath"/rvic_parameters.conf"  
+sed -i "s|FILE_NAME = ./input.nc|FILE_NAME = ./output/RVIC_input_$domainName.nc|" $tempPath"/rvic_parameters.conf"  
 sed -i "s|FILE_NAME = ./domain.nc|FILE_NAME = ./output/domain_$domainName.nc|" $tempPath"/rvic_parameters.conf"  
 sed -i "s|CASEID = casename|CASEID = $domainName|" $tempPath"/rvic_parameters.conf"  
 rvic parameters $tempPath"/rvic_parameters.conf"
@@ -119,8 +120,22 @@ mv $(find $tempPath"/RVIC_params/output/params/" -type f | grep rvic) $outputPat
 Rscript $inputPath"/convertRVICParams2Latlon.R" $outputPath"/RVIC_params_"$domainName".nc" $outputPath"/domain_"$domainName".nc" $outputPath"/RVIC_params_"$domainName"_lonlat.nc"
 
 #############################
+## Create VIC parameters
+domainFile=$outputPath"domain_"$domainName".nc"
+outVICParamFile=$outputPath"VIC_params_"$domainName".nc"
+cp $inputPath"/create_vic_params.py" $tempPath
+sed -i "s|soil_file   = ''|soil_file   = '$tonicParamsPath/LibsAndParams_isimip/global_soil_file.new.arno.modified.wb.isimip'|" $tempPath"/create_vic_params.py" 
+sed -i "s|snow_file   = ''|snow_file   = '$tonicParamsPath/LibsAndParams_wietse/new_snow'|" $tempPath"/create_vic_params.py" 
+sed -i "s|veg_file    = ''|veg_file    = '$tonicParamsPath/LibsAndParams_isimip/global_veg_param.txt'|" $tempPath"/create_vic_params.py" 
+sed -i "s|veglib_file = ''|veglib_file = '$tonicParamsPath/LibsAndParams_isimip/world_veg_lib.txt'|" $tempPath"/create_vic_params.py" 
+sed -i "s|domain_file = ''|domain_file = '$domainFile'|" $tempPath"/create_vic_params.py" 
+sed -i "s|out_file    = ''|out_file    = '$outVICParamFile'|" $tempPath"/create_vic_params.py" 
+source activate tonic 
+python $tempPath"/create_vic_params.py"     
+
+#############################
 ## Clean
-rm -r $tempPath
+#rm -r $tempPath
 
 #############################
 ## Done

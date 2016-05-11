@@ -27,7 +27,7 @@ def main():
     source_area = f.variables['Source_Area'][:]
     lons = f.variables['lon'][:]
     lats = f.variables['lat'][:]
-    land_mask = f.variables['Land_Mask'][:]
+    land_mask = f.variables['mask'][:]
     f.close()
     # ---------------------------------------------------------------- #
 
