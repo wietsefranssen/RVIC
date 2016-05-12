@@ -135,6 +135,26 @@ source activate tonic
 python $tempPath"/create_vic_params.py"     
 
 #############################
+## Update the domain file
+# select variable out of file
+ncks -v mask $outputPath"domain_"$domainName".nc" $tempPath"/RVIC_mask_"$domainName".nc" 
+ncks -v cellnum $outputPath"VIC_params_"$domainName".nc" $tempPath"/VIC_cellnum_"$domainName".nc"
+
+# correct strange error(?)
+ncdump $tempPath"/VIC_cellnum_"$domainName".nc" > $tempPath"/VIC_cellnum_"$domainName".txt"
+ncgen $tempPath"/VIC_cellnum_"$domainName".txt" -o $tempPath"/VIC_cellnum_"$domainName".nc"
+
+# make all values higher than 0: 1
+cdo ifthenc,1 $tempPath"/VIC_cellnum_"$domainName".nc" $tempPath"/VIC_mask_"$domainName".nc"
+
+# combine both masks
+cdo mul $tempPath"/RVIC_mask_"$domainName".nc" $tempPath"/VIC_mask_"$domainName".nc" $tempPath"/new_mask_"$domainName".nc"
+
+# update the old domain file.
+ncks -A $tempPath"/new_mask_"$domainName".nc" $outputPath"domain_"$domainName".nc"
+
+
+#############################
 ## Clean
 #rm -r $tempPath
 
