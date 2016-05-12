@@ -9,13 +9,13 @@ outputPath="./output/"
 flowDirectionInput="ddm30"
 #flowDirectionInput="download" #--> not working yet
 
-domain="-179.75,179.75,-55.75,83.75"; domainName="global"
-domain="-24.25,39.75,33.25,71.75"; domainName="EU"
-#domain="0.25,10.25,50.25,55.55"; domainName="NL"
-#domain="-85.25,-30.25,-60.25,15.25"; domainName="S-America"
+minLon="-179.75"; maxLon="179.75"; minLat="-55.75" ; maxLat="83.75"; domainName="global"
+minLon="-85.25" ; maxLon="-30.25"; minLat="-60.25" ; maxLat="15.25"; domainName="S-America"
+minLon="-24.25" ; maxLon="39.75" ; minLat="33.25"  ; maxLat="71.75"; domainName="EU"
+#minLon="0.25"   ; maxLon="10.25" ; minLat="50.25"  ; maxLat="55.25"; domainName="NL"
 ####### ONLY ADAPT THOSE LINES
 
-
+domain=$minLon","$maxLon","$minLat","$maxLat
 rvicPath="$(pwd)/../../../"
 tonicParamsPath="../create_VIC_params/"
 inputPath="./input/"
@@ -130,6 +130,7 @@ sed -i "s|veg_file    = ''|veg_file    = '$tonicParamsPath/LibsAndParams_isimip/
 sed -i "s|veglib_file = ''|veglib_file = '$tonicParamsPath/LibsAndParams_isimip/world_veg_lib.txt'|" $tempPath"/create_vic_params.py" 
 sed -i "s|domain_file = ''|domain_file = '$domainFile'|" $tempPath"/create_vic_params.py" 
 sed -i "s|out_file    = ''|out_file    = '$outVICParamFile'|" $tempPath"/create_vic_params.py" 
+sed -i "s|lonlat      = ,,,|lonlat      = $domain|" $tempPath"/create_vic_params.py" 
 source activate tonic 
 python $tempPath"/create_vic_params.py"     
 

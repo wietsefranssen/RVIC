@@ -8,6 +8,21 @@ veg_file    = ''
 veglib_file = ''
 domain_file = ''
 out_file    = ''
+lonlat      = ,,,
+
+lon = np.arange(lonlat[0],lonlat[1]+0.000001,.5)
+lat = np.arange(lonlat[2],lonlat[3]+0.000001,.5)
+lon_array = np.zeros(len(lon)*len(lat))
+lat_array = np.zeros(len(lon)*len(lat))
+
+count=0
+#print(len(lon_array))
+for j in range(0, len(lat)):
+  for i in range(0, len(lon)):
+    lon_array[count] = lon[i]
+    lat_array[count] = lat[j]
+    count = count+1
+    
 
 n_veg_classes = 11
 root_zones = 3
@@ -27,6 +42,8 @@ veg_lib = veg_class(veglib_file, skiprows=2)
 
 # Determine the grid shape
 target_grid, target_attrs = read_netcdf(domain_file)
+#target_grid, target_attrs = calc_grid(soil_dict['lats'], soil_dict['lons'])
+#target_grid, target_attrs = calc_grid(lat_array, lon_array)
 
 # Grid all the parameters
 grid_dict = grid_params(soil_dict, target_grid, version='5.0.dev',
