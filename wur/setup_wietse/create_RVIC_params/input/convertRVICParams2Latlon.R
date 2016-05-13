@@ -74,7 +74,7 @@ v_outlet_y_ind<-ncvar_get(nc_param,"outlet_y_ind")
 for (iOutlet in 1:nOutlets) {
   iLon<-outlet_lons[iOutlet]
   iLat<-outlet_lats[iOutlet]
-  print(sprintf("iLon: %5.2f, iLat %5.2f, iOutlet %10.0f", iLon, iLat, iOutlet))
+  #print(sprintf("iLon: %5.2f, iLat %5.2f, iOutlet %10.0f", iLon, iLat, iOutlet))
   outlet_decomp_ind[lons==iLon,lats==iLat]<-v_outlet_decomp_ind[iOutlet]
   outlet_mask[lons==iLon,lats==iLat]<-v_outlet_mask[iOutlet]
   outlet_number[lons==iLon,lats==iLat]<-v_outlet_number[iOutlet]

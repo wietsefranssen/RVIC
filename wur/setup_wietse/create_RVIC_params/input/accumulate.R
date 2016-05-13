@@ -88,7 +88,7 @@ total<-0
 iLon<-0
 
 for (iLat in 1:nlat) {
-  print(sprintf("iLon: %03i,%03i, iLat: %03i,%03i  (%5.2f, %5.2f), flowdir: %s", iLon, nlon,iLat, nlat, lons[iLon], lats[iLat],flowDir[iLon,iLat]))
+  print(sprintf("iLat: %03i,%03i (%5.2f)", iLat, nlat, lats[iLat]))
   for (iLon in 1:nlon) {
     iLonTmp<-iLon
     iLatTmp<-iLat

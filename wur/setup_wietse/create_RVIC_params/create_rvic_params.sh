@@ -2,6 +2,8 @@
 ## 1. Obtain Flow Direction Raster 
 # Documentation: 
 # http://rvic.readthedocs.org/en/latest/user-guide/parameters/ 
+dateTotal1=$(date -u +"%s") # start time of the RUN
+datePart1=$(date -u +"%s") # start time of the RUN
 
 ####### ONLY ADAPT THOSE LINES
 outputPath="./output/"
@@ -12,7 +14,7 @@ flowDirectionInput="ddm30"
 minLon="-179.75"; maxLon="179.75"; minLat="-55.75" ; maxLat="83.75"; domainName="global"
 minLon="-85.25" ; maxLon="-30.25"; minLat="-60.25" ; maxLat="15.25"; domainName="S-America"
 minLon="-24.25" ; maxLon="39.75" ; minLat="33.25"  ; maxLat="71.75"; domainName="EU"
-#minLon="0.25"   ; maxLon="10.25" ; minLat="50.25"  ; maxLat="55.25"; domainName="NL"
+minLon="0.25"   ; maxLon="10.25" ; minLat="50.25"  ; maxLat="55.25"; domainName="NL"
 ####### ONLY ADAPT THOSE LINES
 
 domain=$minLon","$maxLon","$minLat","$maxLat
@@ -30,6 +32,11 @@ mkdir -p $tempPath
 
 outputFile="RVIC_input_"$domainName".nc"
 
+echo 
+echo "***************************************" 
+echo "** since previous part: $(printf "%03d\n" $(($(date -u +"%s")-$datePart1))) sec *******"; datePart1=$(date -u +"%s")
+echo "** Obtaining the file(s)"    
+echo "***************************************" 
 if [ "$flowDirectionInput" == "download" ]
 then
   # Obtain the files: 
@@ -54,15 +61,30 @@ else
 fi
 
 # Convert the files 
+echo 
+echo "***************************************" 
+echo "** since previous part: $(printf "%03d\n" $(($(date -u +"%s")-$datePart1))) sec *******"; datePart1=$(date -u +"%s")
+echo "** Converting the file(s)"    
+echo "***************************************" 
 gdal_translate $tempPath"flowdirection.asc" -of netCDF $tempPath"flowdirection.nc"
 ncrename -v Band1,flow_direction $tempPath"flowdirection.nc"
 
 # select domain
+echo 
+echo "***************************************" 
+echo "** since previous part: $(printf "%03d\n" $(($(date -u +"%s")-$datePart1))) sec *******"; datePart1=$(date -u +"%s")
+echo "** Select domain"    
+echo "***************************************" 
 cdo sellonlatbox,$domain $tempPath"flowdirection.nc" $tempPath"flowdirection_"$domainName".nc"
 gdal_translate -of AAIGrid $tempPath"flowdirection_"$domainName".nc" $tempPath"flowdirection_"$domainName".asc"
 
 ## 2. Calculate grid box Flow Distance 
 # compile create_xmask
+echo 
+echo "***************************************" 
+echo "** since previous part: $(printf "%03d\n" $(($(date -u +"%s")-$datePart1))) sec *******"; datePart1=$(date -u +"%s")
+echo "** Compile and apply create_xmask"    
+echo "***************************************" 
 gcc $inputPath"/create_xmask.c" -o $tempPath"/create_xmask" -lm
 # create DRT_Flowdistance_globe_ARCGIS_half.asc
 $tempPath"/create_xmask" $tempPath"flowdirection_"$domainName".asc" $tempPath"flowdistance_"$domainName".asc"
@@ -73,6 +95,11 @@ ncrename -v Band1,flow_distance $tempPath"flowdistance_"$domainName".nc"
 ## and
 ## 4. Calculate Source_Area
 # create mask
+echo 
+echo "***************************************" 
+echo "** since previous part: $(printf "%03d\n" $(($(date -u +"%s")-$datePart1))) sec *******"; datePart1=$(date -u +"%s")
+echo "** Create mask"    
+echo "***************************************" 
 cdo eq $tempPath"flowdirection_"$domainName".nc" $tempPath"flowdirection_"$domainName".nc" $tempPath"mask_"$domainName".nc"
 ncrename -v flow_direction,mask $tempPath"mask_"$domainName".nc"
 ## create basin_id and sourcearea (flow accumulation)
@@ -84,6 +111,11 @@ Rscript $inputPath"/accumulate.R" $tempPath"flowdirection_"$domainName".nc" $tem
 gdal_translate -of AAIGrid $tempPath"mask_"$domainName".nc" $tempPath"fraction_"$domainName".asc"
 
 # establish the domain file (domain.rvic.europe.20160208.nc)
+echo 
+echo "***************************************" 
+echo "** since previous part: $(printf "%03d\n" $(($(date -u +"%s")-$datePart1))) sec *******"; datePart1=$(date -u +"%s")
+echo "** Establish the domain file"    
+echo "***************************************" 
 $rvicPath"/tools/fraction2domain.bash" $tempPath"fraction_"$domainName".asc" $domainName
 mv "domain.rvic_"$domainName".nc" $outputPath"domain_"$domainName".nc"
 #ncrename -v mask,Land_Mask $outputPath"domain_"$domainName".nc"
@@ -97,14 +129,23 @@ ncks -A $outputPath"domain_"$domainName".nc" $outputPath$outputFile
 
 #############################
 ## Create Pour Points File
-python2.7 $rvicPath"/tools/find_pour_points.py" $outputPath$outputFile $outputPath"RVIC_pour_points_"$domainName".csv" --which_points all 
+echo 
+echo "***************************************" 
+echo "** since previous part: $(printf "%03d\n" $(($(date -u +"%s")-$datePart1))) sec *******"; datePart1=$(date -u +"%s")
+echo "** Create Pour Points File"    
+echo "***************************************" 
+python $rvicPath"/tools/find_pour_points.py" $outputPath$outputFile $outputPath"RVIC_pour_points_"$domainName".csv" --which_points all 
 #############################
 ## Create UH BOX File
 # todo
 
 #############################
 ## Create RVIC parameters
-#source activate rvic
+echo 
+echo "***************************************" 
+echo "** since previous part: $(printf "%03d\n" $(($(date -u +"%s")-$datePart1))) sec *******"; datePart1=$(date -u +"%s")
+echo "** Create rvic paramater file"    
+echo "***************************************" 
 cp $inputPath"/rvic_parameters.conf" $tempPath"/rvic_parameters.conf"
 sed -i "s|FILE_NAME = ./pour_points.csv|FILE_NAME = ./output/RVIC_pour_points_$domainName.csv|" $tempPath"/rvic_parameters.conf"  
 sed -i "s|FILE_NAME = ./input.nc|FILE_NAME = ./output/RVIC_input_$domainName.nc|" $tempPath"/rvic_parameters.conf"  
@@ -114,13 +155,22 @@ rvic parameters $tempPath"/rvic_parameters.conf"
 
 mv $(find $tempPath"/RVIC_params/output/params/" -type f | grep rvic) $outputPath"/RVIC_params_"$domainName".nc"
 
-
 #############################
 ## Convert RVIC parameters lonlat
+echo 
+echo "***************************************" 
+echo "** since previous part: $(printf "%03d\n" $(($(date -u +"%s")-$datePart1))) sec *******"; datePart1=$(date -u +"%s")
+echo "** Create latlon file from rvic paramater file"    
+echo "***************************************" 
 Rscript $inputPath"/convertRVICParams2Latlon.R" $outputPath"/RVIC_params_"$domainName".nc" $outputPath"/domain_"$domainName".nc" $outputPath"/RVIC_params_"$domainName"_lonlat.nc"
 
 #############################
 ## Create VIC parameters
+echo 
+echo "***************************************" 
+echo "** since previous part: $(printf "%03d\n" $(($(date -u +"%s")-$datePart1))) sec *******"; datePart1=$(date -u +"%s")
+echo "** Create vic paramater file"    
+echo "***************************************" 
 domainFile=$outputPath"domain_"$domainName".nc"
 outVICParamFile=$outputPath"VIC_params_"$domainName".nc"
 cp $inputPath"/create_vic_params.py" $tempPath
@@ -131,12 +181,16 @@ sed -i "s|veglib_file = ''|veglib_file = '$tonicParamsPath/LibsAndParams_isimip/
 sed -i "s|domain_file = ''|domain_file = '$domainFile'|" $tempPath"/create_vic_params.py" 
 sed -i "s|out_file    = ''|out_file    = '$outVICParamFile'|" $tempPath"/create_vic_params.py" 
 sed -i "s|lonlat      = ,,,|lonlat      = $domain|" $tempPath"/create_vic_params.py" 
-source activate tonic 
 python $tempPath"/create_vic_params.py"     
 
 #############################
 ## Update the domain file
 # select variable out of file
+echo 
+echo "***************************************" 
+echo "** since previous part: $(printf "%03d\n" $(($(date -u +"%s")-$datePart1))) sec *******"; datePart1=$(date -u +"%s")
+echo "** update the domain file (combine VIC and RVIC mask)"    
+echo "***************************************" 
 ncks -v mask $outputPath"domain_"$domainName".nc" $tempPath"/RVIC_mask_"$domainName".nc" 
 ncks -v cellnum $outputPath"VIC_params_"$domainName".nc" $tempPath"/VIC_cellnum_"$domainName".nc"
 
@@ -153,15 +207,20 @@ cdo mul $tempPath"/RVIC_mask_"$domainName".nc" $tempPath"/VIC_mask_"$domainName"
 # update the old domain file.
 ncks -A $tempPath"/new_mask_"$domainName".nc" $outputPath"domain_"$domainName".nc"
 
-
 #############################
 ## Clean
 #rm -r $tempPath
 
 #############################
 ## Done
-echo ""
-echo "***********************"
-echo "****** DONE! **********"
-echo "***********************"
-echo "ouput is written to: "$outputPath
+### TOTAL DURATION OF THE RUN
+dateTotal2=$(date -u +"%s") # end time
+diffTotal=$(($dateTotal2-$dateTotal1))
+echo "***************************************" 
+echo "** since previous part: $(printf "%03d\n" $(($(date -u +"%s")-$datePart1))) sec *******"; datePart1=$(date -u +"%s")
+echo "** SUMMARY" 
+echo "** "
+echo "** TOTAL: $(($diffTotal / 60)) minutes and $(($diffTotal % 60))"
+echo "** "
+echo "** ouput is written to: "$outputPath
+echo "***************************************" 
