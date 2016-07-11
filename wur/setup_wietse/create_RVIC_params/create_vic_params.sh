@@ -6,7 +6,7 @@ dateTotal1=$(date -u +"%s") # start time of the RUN
 datePart1=$(date -u +"%s") # start time of the RUN
 
 ####### ONLY ADAPT THOSE LINES
-outputPath="./output_new2/"
+outputPath="./output/"
 
 flowDirectionInput="ddm30"
 #flowDirectionInput="download" #--> not working yet

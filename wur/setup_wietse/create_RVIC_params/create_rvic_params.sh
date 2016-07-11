@@ -6,7 +6,7 @@ dateTotal1=$(date -u +"%s") # start time of the RUN
 datePart1=$(date -u +"%s") # start time of the RUN
 
 ####### ONLY ADAPT THOSE LINES
-outputPath="./output_new3/"
+outputPath="./output/"
 
 flowDirectionInput="ddm30"
 #flowDirectionInput="download" #--> not working yet
@@ -23,10 +23,10 @@ rvicPath="$(pwd)/../../../"
 tonicParamsPath="../create_VIC_params/"
 inputPath="./input/"
 tempPath="./temp/"
-domainFile="/home/wietse/Documents/WORKDIRS/anaconda3_downloadedProjects/RVIC/wur/setup_wietse/create_RVIC_params/output_new2/domain_"$domainName".nc"
+domainFile="/home/wietse/Documents/WORKDIRS/anaconda3_downloadedProjects/RVIC/wur/setup_wietse/create_RVIC_params/output/domain_"$domainName".nc"
 
 rm -r $tempPath
-rm -r $outputPath
+#rm -r $outputPath
 
 mkdir -p $inputPath
 mkdir -p $outputPath
@@ -93,17 +93,13 @@ $tempPath"/create_xmask" $tempPath"flowdirection_"$domainName".asc" $tempPath"fl
 gdal_translate $tempPath"flowdistance_"$domainName".asc" -of netCDF $tempPath"flowdistance_"$domainName".nc"
 ncrename -v Band1,flow_distance $tempPath"flowdistance_"$domainName".nc"
 
-## 3. Calculate basin_id and land mask
-## and
-## 4. Calculate Source_Area
-# create mask
+## 3. Calculate basin_id
+## create basin_id and sourcearea (flow accumulation)
 echo 
 echo "***************************************" 
 echo "** since previous part: $(printf "%03d\n" $(($(date -u +"%s")-$datePart1))) sec *******"; datePart1=$(date -u +"%s")
-echo "** Create mask"    
+echo "** Create basin_id and sourcearea"    
 echo "***************************************" 
-cdo eq $tempPath"flowdirection_"$domainName".nc" $tempPath"flowdirection_"$domainName".nc" $tempPath"mask_"$domainName".nc"
-ncrename -v flow_direction,mask $tempPath"mask_"$domainName".nc"
 ## create basin_id and sourcearea (flow accumulation)
 Rscript $inputPath"/accumulate.R" $tempPath"flowdirection_"$domainName".nc" $tempPath"flowaccumulation_"$domainName".nc"
 
@@ -140,13 +136,13 @@ echo "** since previous part: $(printf "%03d\n" $(($(date -u +"%s")-$datePart1))
 echo "** Create rvic parameter file"    
 echo "***************************************" 
 cp $inputPath"/rvic_parameters.conf" $tempPath"/rvic_parameters.conf"
-sed -i "s|FILE_NAME = ./pour_points.csv|FILE_NAME = ./output/RVIC_pour_points_$domainName.csv|" $tempPath"/rvic_parameters.conf"  
-sed -i "s|FILE_NAME = ./input.nc|FILE_NAME = ./output/RVIC_input_$domainName.nc|" $tempPath"/rvic_parameters.conf"  
-sed -i "s|FILE_NAME = ./domain.nc|FILE_NAME = ./output/domain_$domainName.nc|" $tempPath"/rvic_parameters.conf"  
+sed -i "s|FILE_NAME = ./pour_points.csv|FILE_NAME = $outputPath/RVIC_pour_points_$domainName.csv|" $tempPath"/rvic_parameters.conf"  
+sed -i "s|FILE_NAME = ./input.nc|FILE_NAME = $outputPath/RVIC_input_$domainName.nc|" $tempPath"/rvic_parameters.conf"  
+sed -i "s|FILE_NAME = ./domain.nc|FILE_NAME = $domainFile|" $tempPath"/rvic_parameters.conf"  
 sed -i "s|CASEID = casename|CASEID = $domainName|" $tempPath"/rvic_parameters.conf"  
 rvic parameters $tempPath"/rvic_parameters.conf"
 
-mv $(find $tempPath"/RVIC_params/output/params/" -type f | grep rvic) $outputPath"/RVIC_params_"$domainName"_tmp.nc"
+mv $(find $tempPath"/RVIC_params/output/params/" -type f | grep rvic) $outputPath"/RVIC_params_"$domainName".nc"
 
 #############################
 ## Convert RVIC parameters lonlat
@@ -155,44 +151,35 @@ echo "***************************************"
 echo "** since previous part: $(printf "%03d\n" $(($(date -u +"%s")-$datePart1))) sec *******"; datePart1=$(date -u +"%s")
 echo "** Create latlon file from rvic parameter file"    
 echo "***************************************" 
-Rscript $inputPath"/convertRVICParams2Latlon.R" $outputPath"/RVIC_params_"$domainName".nc" $outputPath"/domain_"$domainName".nc" $outputPath"/RVIC_params_"$domainName"_lonlat.nc"
+Rscript $inputPath"/convertRVICParams2Latlon.R" $outputPath"/RVIC_params_"$domainName".nc" $domainFile $outputPath"/RVIC_params_"$domainName"_lonlat.nc"
 
 #############################
-## Create VIC parameters
+## Merge domains
+# select variable out of file
 echo 
 echo "***************************************" 
 echo "** since previous part: $(printf "%03d\n" $(($(date -u +"%s")-$datePart1))) sec *******"; datePart1=$(date -u +"%s")
-echo "** Create vic parameter file"    
+echo "** Merge domains (combine VIC and RVIC mask)"    
 echo "***************************************" 
+cdo eq $tempPath"flowdirection_"$domainName".nc" $tempPath"flowdirection_"$domainName".nc" $tempPath"mask_"$domainName".nc"
+ncrename -v flow_direction,mask $tempPath"mask_"$domainName".nc"
+cdo setctomiss,0 $tempPath"mask_"$domainName".nc" $tempPath"/temp_RVIC_mask_missValue.nc"
 
-##############################
-### Update the domain file
-## select variable out of file
-#echo 
-#echo "***************************************" 
-#echo "** since previous part: $(printf "%03d\n" $(($(date -u +"%s")-$datePart1))) sec *******"; datePart1=$(date -u +"%s")
-#echo "** update the domain file (combine VIC and RVIC mask)"    
-#echo "***************************************" 
-#ncks -v mask $outputPath"domain_"$domainName".nc" $tempPath"/RVIC_mask_"$domainName".nc" 
-#ncks -v cellnum $outputPath"VIC_params_"$domainName".nc" $tempPath"/VIC_cellnum_"$domainName".nc"
-#
-## correct strange error(?)
-#ncdump $tempPath"/VIC_cellnum_"$domainName".nc" > $tempPath"/VIC_cellnum_"$domainName".txt"
-#ncgen $tempPath"/VIC_cellnum_"$domainName".txt" -o $tempPath"/VIC_cellnum_"$domainName".nc"
-#
-## make all values higher than 0: 1
-#cdo ifthenc,1 $tempPath"/VIC_cellnum_"$domainName".nc" $tempPath"/VIC_mask_"$domainName".nc"
-#
-## combine both masks
-#cdo mul $tempPath"/RVIC_mask_"$domainName".nc" $tempPath"/VIC_mask_"$domainName".nc" $tempPath"/new_mask_"$domainName".nc"
-#
-## update the old domain file.
-#ncks -A $tempPath"/new_mask_"$domainName".nc" $outputPath"domain_"$domainName"_tmp.nc"
-## convert float mask to int mask
-#ncap2 -s 'mask=int(mask)' $outputPath"domain_"$domainName"_tmp.nc" $outputPath"domain_"$domainName".nc"
-#rm $outputPath"domain_"$domainName"_tmp.nc" 
-#ncks -A $tempPath"/RVIC_mask_"$domainName".nc" $outputPath"domain2_"$domainName".nc"
-#
+ncks -v mask $domainFile $tempPath"/temp_domain_mask.nc"
+cdo setctomiss,0 $tempPath"/temp_domain_mask.nc" $tempPath"/temp_domain_mask_missValue.nc"
+
+# combine both masks
+cdo mul $tempPath"/temp_domain_mask_missValue.nc" $tempPath"/temp_RVIC_mask_missValue.nc" $tempPath"/temp_combined_mask.nc" 
+
+#############################
+## Update domain file
+echo 
+echo "***************************************" 
+echo "** since previous part: $(printf "%03d\n" $(($(date -u +"%s")-$datePart1))) sec *******"; datePart1=$(date -u +"%s")
+echo "** Update the domain file"    
+echo "***************************************" 
+ncks -A -v mask $tempPath"/temp_combined_mask.nc" $domainFile
+
 #############################
 ## Clean
 #rm -r $tempPath

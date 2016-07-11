@@ -6,7 +6,7 @@ dateTotal1=$(date -u +"%s") # start time of the RUN
 datePart1=$(date -u +"%s") # start time of the RUN
 
 ####### ONLY ADAPT THOSE LINES
-domainInFile="./output_new2/domain_EU.nc"
+domainInFile="./output/domain_EU.nc"
 forcingFile="/home/wietse/Documents/Projects/VIC/VIC_testsetups/image_test/forcing/WFDEI_GPCC_EU.1981.nc"
 
 tempPath="./temp/"
