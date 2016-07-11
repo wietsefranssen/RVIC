@@ -12,9 +12,10 @@ flowDirectionInput="ddm30"
 #flowDirectionInput="download" #--> not working yet
 
 minLon="-179.75"; maxLon="179.75"; minLat="-55.75" ; maxLat="83.75"; domainName="global"
-minLon="-85.25" ; maxLon="-30.25"; minLat="-60.25" ; maxLat="15.25"; domainName="S-America"
+#minLon="-85.25" ; maxLon="-30.25"; minLat="-60.25" ; maxLat="15.25"; domainName="S-America"
 minLon="-24.25" ; maxLon="39.75" ; minLat="33.25"  ; maxLat="71.75"; domainName="EU"
-minLon="0.25"   ; maxLon="10.25" ; minLat="50.25"  ; maxLat="55.25"; domainName="NL"
+#minLon="0.25"   ; maxLon="10.25" ; minLat="50.25"  ; maxLat="55.25"; domainName="NL"
+#minLon="-0.75"   ; maxLon="10.75" ; minLat="49.75"  ; maxLat="55.75"; domainName="NL_2"
 ####### ONLY ADAPT THOSE LINES
 
 domain=$minLon","$maxLon","$minLat","$maxLat
@@ -144,7 +145,7 @@ python $rvicPath"/tools/find_pour_points.py" $outputPath$outputFile $outputPath"
 echo 
 echo "***************************************" 
 echo "** since previous part: $(printf "%03d\n" $(($(date -u +"%s")-$datePart1))) sec *******"; datePart1=$(date -u +"%s")
-echo "** Create rvic paramater file"    
+echo "** Create rvic parameter file"    
 echo "***************************************" 
 cp $inputPath"/rvic_parameters.conf" $tempPath"/rvic_parameters.conf"
 sed -i "s|FILE_NAME = ./pour_points.csv|FILE_NAME = ./output/RVIC_pour_points_$domainName.csv|" $tempPath"/rvic_parameters.conf"  
@@ -153,14 +154,18 @@ sed -i "s|FILE_NAME = ./domain.nc|FILE_NAME = ./output/domain_$domainName.nc|" $
 sed -i "s|CASEID = casename|CASEID = $domainName|" $tempPath"/rvic_parameters.conf"  
 rvic parameters $tempPath"/rvic_parameters.conf"
 
-mv $(find $tempPath"/RVIC_params/output/params/" -type f | grep rvic) $outputPath"/RVIC_params_"$domainName".nc"
+mv $(find $tempPath"/RVIC_params/output/params/" -type f | grep rvic) $outputPath"/RVIC_params_"$domainName"_tmp.nc"
+
+# convert float mask to int mask
+ncap2 -s 'mask=int(mask)' $outputPath"/RVIC_params_"$domainName"_tmp.nc" $outputPath"/RVIC_params_"$domainName".nc"
+rm $outputPath"/RVIC_params_"$domainName"_tmp.nc"
 
 #############################
 ## Convert RVIC parameters lonlat
 echo 
 echo "***************************************" 
 echo "** since previous part: $(printf "%03d\n" $(($(date -u +"%s")-$datePart1))) sec *******"; datePart1=$(date -u +"%s")
-echo "** Create latlon file from rvic paramater file"    
+echo "** Create latlon file from rvic parameter file"    
 echo "***************************************" 
 Rscript $inputPath"/convertRVICParams2Latlon.R" $outputPath"/RVIC_params_"$domainName".nc" $outputPath"/domain_"$domainName".nc" $outputPath"/RVIC_params_"$domainName"_lonlat.nc"
 
@@ -169,7 +174,7 @@ Rscript $inputPath"/convertRVICParams2Latlon.R" $outputPath"/RVIC_params_"$domai
 echo 
 echo "***************************************" 
 echo "** since previous part: $(printf "%03d\n" $(($(date -u +"%s")-$datePart1))) sec *******"; datePart1=$(date -u +"%s")
-echo "** Create vic paramater file"    
+echo "** Create vic parameter file"    
 echo "***************************************" 
 domainFile=$outputPath"domain_"$domainName".nc"
 outVICParamFile=$outputPath"VIC_params_"$domainName".nc"
@@ -205,7 +210,11 @@ cdo ifthenc,1 $tempPath"/VIC_cellnum_"$domainName".nc" $tempPath"/VIC_mask_"$dom
 cdo mul $tempPath"/RVIC_mask_"$domainName".nc" $tempPath"/VIC_mask_"$domainName".nc" $tempPath"/new_mask_"$domainName".nc"
 
 # update the old domain file.
-ncks -A $tempPath"/new_mask_"$domainName".nc" $outputPath"domain_"$domainName".nc"
+ncks -A $tempPath"/new_mask_"$domainName".nc" $outputPath"domain_"$domainName"_tmp.nc"
+# convert float mask to int mask
+ncap2 -s 'mask=int(mask)' $outputPath"domain_"$domainName"_tmp.nc" $outputPath"domain_"$domainName".nc"
+rm $outputPath"domain_"$domainName"_tmp.nc" 
+ncks -A $tempPath"/RVIC_mask_"$domainName".nc" $outputPath"domain2_"$domainName".nc"
 
 #############################
 ## Clean
