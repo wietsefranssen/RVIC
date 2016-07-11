@@ -11,11 +11,11 @@ outputPath="./output_new3/"
 flowDirectionInput="ddm30"
 #flowDirectionInput="download" #--> not working yet
 
-minLon="-179.75"; maxLon="179.75"; minLat="-55.75" ; maxLat="83.75"; domainName="global"
+#minLon="-179.75"; maxLon="179.75"; minLat="-55.75" ; maxLat="83.75"; domainName="global"
 #minLon="-85.25" ; maxLon="-30.25"; minLat="-60.25" ; maxLat="15.25"; domainName="S-America"
 minLon="-24.25" ; maxLon="39.75" ; minLat="33.25"  ; maxLat="71.75"; domainName="EU"
-minLon="0.25"   ; maxLon="10.25" ; minLat="50.25"  ; maxLat="55.25"; domainName="NL"
-minLon="-0.75"   ; maxLon="10.75" ; minLat="49.75"  ; maxLat="55.75"; domainName="NL_2"
+#minLon="0.25"   ; maxLon="10.25" ; minLat="50.25"  ; maxLat="55.25"; domainName="NL"
+#minLon="-0.75"   ; maxLon="10.75" ; minLat="49.75"  ; maxLat="55.75"; domainName="NL_2"
 ####### ONLY ADAPT THOSE LINES
 
 domain=$minLon","$maxLon","$minLat","$maxLat
@@ -23,6 +23,7 @@ rvicPath="$(pwd)/../../../"
 tonicParamsPath="../create_VIC_params/"
 inputPath="./input/"
 tempPath="./temp/"
+domainFile="/home/wietse/Documents/WORKDIRS/anaconda3_downloadedProjects/RVIC/wur/setup_wietse/create_RVIC_params/output_new2/domain_"$domainName".nc"
 
 rm -r $tempPath
 rm -r $outputPath
@@ -107,26 +108,17 @@ ncrename -v flow_direction,mask $tempPath"mask_"$domainName".nc"
 Rscript $inputPath"/accumulate.R" $tempPath"flowdirection_"$domainName".nc" $tempPath"flowaccumulation_"$domainName".nc"
 
 #############################
-## Create domain file
-# convert netcdf to ascii
-gdal_translate -of AAIGrid $tempPath"mask_"$domainName".nc" $tempPath"fraction_"$domainName".asc"
-
-# establish the domain file (domain.rvic.europe.20160208.nc)
+## Create RVIC input file
 echo 
 echo "***************************************" 
 echo "** since previous part: $(printf "%03d\n" $(($(date -u +"%s")-$datePart1))) sec *******"; datePart1=$(date -u +"%s")
-echo "** Establish the domain file"    
+echo "** Create RVIC input file"    
 echo "***************************************" 
-$rvicPath"/tools/fraction2domain.bash" $tempPath"fraction_"$domainName".asc" $domainName
-mv "domain.rvic_"$domainName".nc" $outputPath"domain_"$domainName".nc"
-#ncrename -v mask,Land_Mask $outputPath"domain_"$domainName".nc"
-
-## 5. Combine all into netcdf format file
 #ncks -A $tempPath"mask_"$domainName".nc" $outputPath$outputFile
 ncks -A $tempPath"flowdirection_"$domainName".nc" $outputPath$outputFile
 ncks -A $tempPath"flowdistance_"$domainName".nc" $outputPath$outputFile
 ncks -A $tempPath"flowaccumulation_"$domainName".nc" $outputPath$outputFile
-ncks -A $outputPath"domain_"$domainName".nc" $outputPath$outputFile
+ncks -A $domainFile $outputPath$outputFile
 
 #############################
 ## Create Pour Points File
@@ -156,10 +148,6 @@ rvic parameters $tempPath"/rvic_parameters.conf"
 
 mv $(find $tempPath"/RVIC_params/output/params/" -type f | grep rvic) $outputPath"/RVIC_params_"$domainName"_tmp.nc"
 
-# convert float mask to int mask
-ncap2 -s 'mask=int(mask)' $outputPath"/RVIC_params_"$domainName"_tmp.nc" $outputPath"/RVIC_params_"$domainName".nc"
-rm $outputPath"/RVIC_params_"$domainName"_tmp.nc"
-
 #############################
 ## Convert RVIC parameters lonlat
 echo 
@@ -176,46 +164,35 @@ echo "***************************************"
 echo "** since previous part: $(printf "%03d\n" $(($(date -u +"%s")-$datePart1))) sec *******"; datePart1=$(date -u +"%s")
 echo "** Create vic parameter file"    
 echo "***************************************" 
-domainFile=$outputPath"domain_"$domainName".nc"
-outVICParamFile=$outputPath"VIC_params_"$domainName".nc"
-cp $inputPath"/create_vic_params.py" $tempPath
-sed -i "s|soil_file   = ''|soil_file   = '$tonicParamsPath/LibsAndParams_isimip/global_soil_file.new.arno.modified.wb.isimip'|" $tempPath"/create_vic_params.py" 
-sed -i "s|snow_file   = ''|snow_file   = '$tonicParamsPath/LibsAndParams_wietse/new_snow'|" $tempPath"/create_vic_params.py" 
-sed -i "s|veg_file    = ''|veg_file    = '$tonicParamsPath/LibsAndParams_isimip/global_veg_param.txt'|" $tempPath"/create_vic_params.py" 
-sed -i "s|veglib_file = ''|veglib_file = '$tonicParamsPath/LibsAndParams_isimip/world_veg_lib.txt'|" $tempPath"/create_vic_params.py" 
-sed -i "s|domain_file = ''|domain_file = '$domainFile'|" $tempPath"/create_vic_params.py" 
-sed -i "s|out_file    = ''|out_file    = '$outVICParamFile'|" $tempPath"/create_vic_params.py" 
-sed -i "s|lonlat      = ,,,|lonlat      = $domain|" $tempPath"/create_vic_params.py" 
-python $tempPath"/create_vic_params.py"     
 
-#############################
-## Update the domain file
-# select variable out of file
-echo 
-echo "***************************************" 
-echo "** since previous part: $(printf "%03d\n" $(($(date -u +"%s")-$datePart1))) sec *******"; datePart1=$(date -u +"%s")
-echo "** update the domain file (combine VIC and RVIC mask)"    
-echo "***************************************" 
-ncks -v mask $outputPath"domain_"$domainName".nc" $tempPath"/RVIC_mask_"$domainName".nc" 
-ncks -v cellnum $outputPath"VIC_params_"$domainName".nc" $tempPath"/VIC_cellnum_"$domainName".nc"
-
-# correct strange error(?)
-ncdump $tempPath"/VIC_cellnum_"$domainName".nc" > $tempPath"/VIC_cellnum_"$domainName".txt"
-ncgen $tempPath"/VIC_cellnum_"$domainName".txt" -o $tempPath"/VIC_cellnum_"$domainName".nc"
-
-# make all values higher than 0: 1
-cdo ifthenc,1 $tempPath"/VIC_cellnum_"$domainName".nc" $tempPath"/VIC_mask_"$domainName".nc"
-
-# combine both masks
-cdo mul $tempPath"/RVIC_mask_"$domainName".nc" $tempPath"/VIC_mask_"$domainName".nc" $tempPath"/new_mask_"$domainName".nc"
-
-# update the old domain file.
-ncks -A $tempPath"/new_mask_"$domainName".nc" $outputPath"domain_"$domainName"_tmp.nc"
-# convert float mask to int mask
-ncap2 -s 'mask=int(mask)' $outputPath"domain_"$domainName"_tmp.nc" $outputPath"domain_"$domainName".nc"
-rm $outputPath"domain_"$domainName"_tmp.nc" 
-ncks -A $tempPath"/RVIC_mask_"$domainName".nc" $outputPath"domain2_"$domainName".nc"
-
+##############################
+### Update the domain file
+## select variable out of file
+#echo 
+#echo "***************************************" 
+#echo "** since previous part: $(printf "%03d\n" $(($(date -u +"%s")-$datePart1))) sec *******"; datePart1=$(date -u +"%s")
+#echo "** update the domain file (combine VIC and RVIC mask)"    
+#echo "***************************************" 
+#ncks -v mask $outputPath"domain_"$domainName".nc" $tempPath"/RVIC_mask_"$domainName".nc" 
+#ncks -v cellnum $outputPath"VIC_params_"$domainName".nc" $tempPath"/VIC_cellnum_"$domainName".nc"
+#
+## correct strange error(?)
+#ncdump $tempPath"/VIC_cellnum_"$domainName".nc" > $tempPath"/VIC_cellnum_"$domainName".txt"
+#ncgen $tempPath"/VIC_cellnum_"$domainName".txt" -o $tempPath"/VIC_cellnum_"$domainName".nc"
+#
+## make all values higher than 0: 1
+#cdo ifthenc,1 $tempPath"/VIC_cellnum_"$domainName".nc" $tempPath"/VIC_mask_"$domainName".nc"
+#
+## combine both masks
+#cdo mul $tempPath"/RVIC_mask_"$domainName".nc" $tempPath"/VIC_mask_"$domainName".nc" $tempPath"/new_mask_"$domainName".nc"
+#
+## update the old domain file.
+#ncks -A $tempPath"/new_mask_"$domainName".nc" $outputPath"domain_"$domainName"_tmp.nc"
+## convert float mask to int mask
+#ncap2 -s 'mask=int(mask)' $outputPath"domain_"$domainName"_tmp.nc" $outputPath"domain_"$domainName".nc"
+#rm $outputPath"domain_"$domainName"_tmp.nc" 
+#ncks -A $tempPath"/RVIC_mask_"$domainName".nc" $outputPath"domain2_"$domainName".nc"
+#
 #############################
 ## Clean
 #rm -r $tempPath
