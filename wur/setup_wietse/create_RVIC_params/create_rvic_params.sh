@@ -6,7 +6,7 @@ dateTotal1=$(date -u +"%s") # start time of the RUN
 datePart1=$(date -u +"%s") # start time of the RUN
 
 ####### ONLY ADAPT THOSE LINES
-outputPath="./output/"
+outputPath="./output_new3/"
 
 flowDirectionInput="ddm30"
 #flowDirectionInput="download" #--> not working yet
@@ -14,8 +14,8 @@ flowDirectionInput="ddm30"
 minLon="-179.75"; maxLon="179.75"; minLat="-55.75" ; maxLat="83.75"; domainName="global"
 #minLon="-85.25" ; maxLon="-30.25"; minLat="-60.25" ; maxLat="15.25"; domainName="S-America"
 minLon="-24.25" ; maxLon="39.75" ; minLat="33.25"  ; maxLat="71.75"; domainName="EU"
-#minLon="0.25"   ; maxLon="10.25" ; minLat="50.25"  ; maxLat="55.25"; domainName="NL"
-#minLon="-0.75"   ; maxLon="10.75" ; minLat="49.75"  ; maxLat="55.75"; domainName="NL_2"
+minLon="0.25"   ; maxLon="10.25" ; minLat="50.25"  ; maxLat="55.25"; domainName="NL"
+minLon="-0.75"   ; maxLon="10.75" ; minLat="49.75"  ; maxLat="55.75"; domainName="NL_2"
 ####### ONLY ADAPT THOSE LINES
 
 domain=$minLon","$maxLon","$minLat","$maxLat
